@@ -11,26 +11,36 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class CryptoPriceService {
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String apiUrl = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1";
-    private String cachedData = "{}"; // Store last successful response
-    private long retryDelay = 10000; // Initial delay 10s
+    private final String apiUrl = "https://api.binance.com/api/v3/ticker/24hr";
+    private String cachedData = "{}"; // Cache to store last successful response
+    private long retryDelay = 1000; // Retry delay in milliseconds (initial: 1 second)
 
-    @Scheduled(fixedRate = 30000) // Fetch every 30 seconds
+    @Scheduled(fixedRate = 1000) // Run every second
     public void fetchCryptoPrices() {
         try {
+            // Fetch data for all coins
             String prices = restTemplate.getForObject(apiUrl, String.class);
-            cachedData = prices; // Update cache
-            retryDelay = 10000; // Reset retry delay after success
+            cachedData = prices; // Update the cache with the latest data
+            retryDelay = 1000; // Reset retry delay after success
+
+            // Broadcast updated prices to WebSocket clients
             CryptoWebSocketHandler.broadcast(prices);
         } catch (HttpClientErrorException.TooManyRequests e) {
+            // Handle rate limiting (HTTP 429)
             System.out.println("Rate limit exceeded. Retrying after " + (retryDelay / 1000) + " seconds...");
             try {
                 TimeUnit.MILLISECONDS.sleep(retryDelay);
-                retryDelay = Math.min(retryDelay * 2, 60000); // Exponential backoff (max 60s)
+                retryDelay = Math.min(retryDelay * 2, 60000); // Exponential backoff (max 60 seconds)
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
             }
-            CryptoWebSocketHandler.broadcast(cachedData); // Send cached data to clients
+            // Send cached data to clients to avoid disruption
+            CryptoWebSocketHandler.broadcast(cachedData);
+        } catch (Exception e) {
+            // Handle other exceptions (e.g., network errors)
+            System.err.println("Error fetching crypto prices: " + e.getMessage());
+            // Send cached data to clients to ensure continuity
+            CryptoWebSocketHandler.broadcast(cachedData);
         }
     }
 }
