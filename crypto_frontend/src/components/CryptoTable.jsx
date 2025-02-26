@@ -1,9 +1,8 @@
-import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from "@mui/material";
+import React from "react";
+import { TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper, Typography } from "@mui/material";
 
 const CryptoTable = ({ data }) => {
-    const cryptoData = Array.isArray(data) ? data : [];
-
-    if (cryptoData.length === 0) {
+    if (data.length === 0) {
         return <Typography variant="body1">No cryptocurrency data available.</Typography>;
     }
 
@@ -12,38 +11,25 @@ const CryptoTable = ({ data }) => {
             <Table>
                 <TableHead>
                     <TableRow>
-                        <TableCell>Logo</TableCell>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Price (USD)</TableCell>
-                        <TableCell>24h Change</TableCell>
-                        <TableCell>Market Cap</TableCell>
+                        <TableCell>Symbol</TableCell>
+                        <TableCell>Last Price</TableCell>
+                        <TableCell>24h Change (%)</TableCell>
+                        <TableCell>24h High</TableCell>
+                        <TableCell>24h Low</TableCell>
+                        <TableCell>Volume</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {cryptoData.map((crypto) => (
-                        <TableRow key={`${crypto.id || crypto.symbol}`}>
-                            <TableCell>
-                                <img src={crypto.image} alt={crypto.name} width="30" height="30" />
+                    {data.map((crypto) => (
+                        <TableRow key={crypto.symbol}>
+                            <TableCell>{crypto.symbol}</TableCell>
+                            <TableCell>{parseFloat(crypto.lastPrice).toFixed(8)}</TableCell>
+                            <TableCell style={{ color: parseFloat(crypto.priceChangePercent) > 0 ? "green" : "red" }}>
+                                {parseFloat(crypto.priceChangePercent).toFixed(2)}%
                             </TableCell>
-                            <TableCell>{crypto.name}</TableCell>
-                            <TableCell>
-                                ${crypto.current_price ? crypto.current_price.toFixed(2) : "N/A"}
-                            </TableCell>
-                            <TableCell
-                                style={{
-                                    color: crypto.price_change_percentage_24h > 0 ? "green" : "red",
-                                }}
-                            >
-                                {crypto.price_change_percentage_24h
-                                    ? crypto.price_change_percentage_24h.toFixed(2)
-                                    : "N/A"}
-                                %
-                            </TableCell>
-                            <TableCell>
-                                {crypto.market_cap
-                                    ? `$${crypto.market_cap.toLocaleString()}`
-                                    : "N/A"}
-                            </TableCell>
+                            <TableCell>{parseFloat(crypto.highPrice).toFixed(8)}</TableCell>
+                            <TableCell>{parseFloat(crypto.lowPrice).toFixed(8)}</TableCell>
+                            <TableCell>{parseFloat(crypto.volume).toFixed(2)}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

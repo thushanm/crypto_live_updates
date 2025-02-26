@@ -1,41 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { Container, Typography, CircularProgress, Alert } from "@mui/material";
+import { fetchCryptoData, connectWebSocket } from "../services/cryptoService";
 import CryptoTable from "../components/CryptoTable";
-import { fetchCryptoData } from "../services/cryptoService";
+import CryptoCard from "../components/CryptoCard";
+import { Typography, Box } from "@mui/material";
 
 const Home = () => {
     const [cryptoData, setCryptoData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     useEffect(() => {
-        const getData = async () => {
-            try {
-                const data = await fetchCryptoData();
-                setCryptoData(data);
-            } catch (err) {
-                setError("Failed to fetch crypto data.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        getData();
+        fetchCryptoData().then(setCryptoData);
+        const cleanup = connectWebSocket(setCryptoData);
+        return cleanup;
     }, []);
 
     return (
-        <Container>
-            <Typography variant="h4" gutterBottom>
-                Crypto Market Prices
-            </Typography>
-            {loading ? (
-                <CircularProgress />
-            ) : error ? (
-                <Alert severity="error">{error}</Alert>
-            ) : (
-                <CryptoTable data={cryptoData} />
-            )}
-        </Container>
+        <Box p={3}>
+            <Typography variant="h4" gutterBottom>Crypto Updates</Typography>
+            <CryptoTable data={cryptoData} />
+            {cryptoData.map(crypto => <CryptoCard key={crypto.symbol} crypto={crypto} />)}
+        </Box>
     );
 };
 

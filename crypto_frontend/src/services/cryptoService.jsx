@@ -1,20 +1,40 @@
+const API_URL = "http://localhost:8080/crypto/prices";
+const WS_URL = "ws://localhost:8080/ws/crypto";
+
 export const fetchCryptoData = async () => {
     try {
-        const response = await fetch("http://localhost:8080/crypto/prices");
-        if (!response.ok) {
-            throw new Error("Failed to fetch data");
-        }
-        const data = await response.json();
-        return data.map((crypto) => ({
-            symbol: crypto.symbol,
-            name: crypto.symbol.replace("USDT", ""), // Extract name from symbol
-            current_price: parseFloat(crypto.lastPrice), // Last price
-            price_change_percentage_24h: parseFloat(crypto.priceChangePercent), // 24h change
-            market_cap: crypto.quoteVolume, // Use volume as a proxy for market cap (Binance does not provide exact market cap)
-            image: `https://cryptoicons.org/api/icon/${crypto.symbol.toLowerCase()}/50`, // Example URL for icons
-        }));
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error("Failed to fetch data");
+        return await response.json();
     } catch (error) {
         console.error("Error fetching crypto data:", error);
         return [];
     }
+};
+
+export const connectWebSocket = (updateData) => {
+    let ws;
+
+    const connect = () => {
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = () => console.log("WebSocket connected.");
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                updateData(data);
+            } catch (error) {
+                console.error("Error parsing WebSocket message:", error);
+            }
+        };
+
+        ws.onerror = (error) => console.error("WebSocket Error:", error);
+        ws.onclose = () => {
+            console.log("WebSocket disconnected. Reconnecting in 2 seconds...");
+            setTimeout(connect, 2000); // Auto-reconnect
+        };
+    };
+
+    connect();
+    return () => ws?.close();
 };
