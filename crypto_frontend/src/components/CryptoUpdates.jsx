@@ -34,7 +34,7 @@ const CryptoUpdates = () => {
             if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
                 ws.close();
             }
-        };
+        };//o
     }, []);
 
     useEffect(() => {
